@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>妖怪ウォッチバスターズ 鬼玉エディタ</title>
+<style>
+:root{--bg:#f3f2f7;--card:#fff;--ink:#1c1b25;--sub:#6a6878;--line:#d9d6e4;--ac:#5a3fd0;--acink:#fff;--ok:#0f7a4a;--ng:#b3261e;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0)}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#14131a;--card:#1e1d27;--ink:#ecebf3;--sub:#9a98ab;--line:#33313f;--ac:#8f7bff;--acink:#12101c;--ok:#5fd59b;--ng:#ff8a80}}
+*{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 system-ui,-apple-system,"Hiragino Sans","Yu Gothic UI",sans-serif;padding-bottom:env(safe-area-inset-bottom,0)}
+main{max-width:34rem;margin:0 auto;padding:1.2rem 1rem 3rem}
+h1{font-size:1.35rem;margin:.2rem 0 .3rem;letter-spacing:.02em}
+p.lead{color:var(--sub);margin:0 0 1.2rem;font-size:.9rem}
+section{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:1rem;margin-bottom:1rem}
+h2{font-size:1rem;margin:0 0 .7rem}
+label{display:block;font-size:.85rem;color:var(--sub);margin:.6rem 0 .2rem}
+input[type=file],input[type=number]{width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:.5rem}
+button{font:inherit;font-weight:600;background:var(--ac);color:var(--acink);border:0;border-radius:6px;padding:.6rem 1rem;margin-top:.8rem;cursor:pointer}
+button:disabled{opacity:.4;cursor:default}
+button:focus-visible,input:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+#msg{font-size:.9rem;min-height:1.4em;margin:.6rem 0 0;white-space:pre-wrap}
+.ok{color:var(--ok)}.ng{color:var(--ng)}
+.cand{display:flex;gap:.6rem;align-items:center;padding:.35rem 0;border-top:1px solid var(--line);font-variant-numeric:tabular-nums}
+.cand:first-child{border-top:0}
+.hide{display:none}
+small{color:var(--sub)}
+</style>
+</head>
+<body>
+<main>
+<h1>鬼玉エディタ</h1>
+<p class="lead">妖怪ウォッチバスターズ 赤猫団・白犬隊・月兎組。ファイルは端末内で処理され、送信されません。必ず元のセーブデータをバックアップしてから使ってください。</p>
+
+<section>
+<h2>1. ファイルを選ぶ</h2>
+<label for="head">head.yw（韓国版・欧米版は head.yw_g）</label>
+<input type="file" id="head">
+<label for="save">game*.yw（韓国版・欧米版は game*.yw_g）</label>
+<input type="file" id="save">
+<button id="load">復号する</button>
+</section>
+
+<section id="edit" class="hide">
+<h2>2. 鬼玉を書き換える</h2>
+<label for="cur">現在の鬼玉の数（ゲーム内の表示どおり）</label>
+<input type="number" id="cur" min="0" max="4294967295" inputmode="numeric">
+<button id="find">検索</button>
+<div id="cands" style="margin-top:.8rem"></div>
+<div id="newbox" class="hide">
+<label for="nv">新しい鬼玉の数</label>
+<input type="number" id="nv" min="0" max="4294967295" inputmode="numeric">
+<small>上限はゲーム側で不明です。極端に大きい値はおすすめしません。</small><br>
+<button id="apply">暗号化して保存</button>
+</div>
+</section>
+<p id="msg" role="status"></p>
+</main>
+
+<script>
+"use strict";
+const $=id=>document.getElementById(id);
+const msg=(t,c)=>{const m=$("msg");m.textContent=t;m.className=c||""};
+const u32=(b,o)=>((b[o]|b[o+1]<<8|b[o+2]<<16|b[o+3]<<24)>>>0);
+const p32=(b,o,v)=>{b[o]=v&255;b[o+1]=v>>>8&255;b[o+2]=v>>>16&255;b[o+3]=v>>>24&255};
+
+/* CRC32 */
+const CT=new Uint32Array(256);for(let i=0;i<256;i++){let c=i;for(let j=0;j<8;j++)c=c&1?0xEDB88320^(c>>>1):c>>>1;CT[i]=c>>>0}
+const crc32=d=>{let c=0xFFFFFFFF;for(let i=0;i<d.length;i++)c=CT[(c^d[i])&255]^(c>>>8);return(c^0xFFFFFFFF)>>>0};
+
+/* 先頭256個の奇素数 */
+const PR=[];for(let n=3;PR.length<256;n+=2)if(PR.every(p=>p*p>n||n%p))PR.push(n);
+
+/* Xorshift / YWCipher (yw_save.py 準拠) */
+class XS{
+  constructor(seed){
+    this.s=[0x6C078966,0xDD5254A5,0xB9523B81,0x03DF95B3];
+    if(seed===0)return;
+    let x=seed;
+    for(let i=0;i<3;i++){x=(x^(x>>>30))>>>0;x=Math.imul(x,0x6C078965)>>>0;x=(x+i+1)>>>0;this.s[i]=x}
+  }
+  next(a){
+    let x=this.s[0],y=this.s[3];
+    this.s[0]=this.s[1];this.s[1]=this.s[2];this.s[2]=this.s[3];
+    x=(x^(x<<11))>>>0;x=(x^(x>>>8))>>>0;y=(y^(y>>>19))>>>0;
+    this.s[3]=(x^y)>>>0;
+    return a?this.s[3]%a:this.s[3];
+  }
+}
+class YW extends XS{
+  constructor(seed,n){
+    super(seed);
+    const t=this.t=Array.from({length:256},(_,i)=>i);
+    for(let i=0;i<n;i++){
+      const r=this.next(0x10000),r1=r&255,r2=(r>>8)&255;
+      if(r1!==r2){const a=t[r1],b=t[r2];[t[a],t[b]]=[t[b],t[a]]}
+    }
+  }
+  xor(d,o){
+    let ka=0;
+    for(let i=0;i<d.length;i++){
+      if(i%256===0)ka=PR[this.t[(i&0xff00)>>8]];
+      o[i]=d[i]^this.t[(ka*(i+1))%256];
+    }
+  }
+}
+
+/* 1段目: CRC32 + シード付きXOR */
+function ywProc(data,enc){
+  const n=data.length,crc=u32(data,n-8),seed=u32(data,n-4);
+  if(!enc&&crc32(data.subarray(0,n-8))!==crc)throw new Error("CRC32が一致しません（ファイルが違うか壊れています）");
+  const out=new Uint8Array(n);
+  new YW(seed,0x1000).xor(data.subarray(0,n-8),out);
+  out.set(data.subarray(n-8),n-8);
+  if(enc)p32(out,n-8,crc32(out.subarray(0,n-8)));
+  return out;
+}
+
+/* AES-128 (暗号化のみ) */
+const SB=new Uint8Array(256);
+(()=>{let p=1,q=1;const r=(v,s)=>((v<<s)|(v>>(8-s)))&255;
+  do{p=(p^(p<<1)^(p&128?283:0))&255;q=(q^(q<<1))&255;q=(q^(q<<2))&255;q=(q^(q<<4))&255;if(q&128)q^=9;
+    SB[p]=q^r(q,1)^r(q,2)^r(q,3)^r(q,4)^99}while(p!==1);
+  SB[0]=99})();
+const xt=v=>((v<<1)^(v&128?27:0))&255;
+function aesKey(k){
+  const w=new Uint8Array(176);w.set(k);let rc=1;
+  for(let i=16;i<176;i+=4){
+    let t=[w[i-4],w[i-3],w[i-2],w[i-1]];
+    if(i%16===0){t=[SB[t[1]]^rc,SB[t[2]],SB[t[3]],SB[t[0]]];rc=xt(rc)}
+    for(let j=0;j<4;j++)w[i+j]=w[i-16+j]^t[j];
+  }
+  return w;
+}
+function aesEnc(w,inp){
+  const s=Uint8Array.from(inp);
+  for(let i=0;i<16;i++)s[i]^=w[i];
+  for(let r=1;r<=10;r++){
+    const u=new Uint8Array(16);
+    for(let c=0;c<4;c++)for(let k=0;k<4;k++)u[c*4+k]=SB[s[((c+k)%4)*4+k]];
+    if(r<10)for(let c=0;c<4;c++){
+      const a0=u[c*4],a1=u[c*4+1],a2=u[c*4+2],a3=u[c*4+3];
+      u[c*4]=xt(a0)^xt(a1)^a1^a2^a3;u[c*4+1]=a0^xt(a1)^xt(a2)^a2^a3;
+      u[c*4+2]=a0^a1^xt(a2)^xt(a3)^a3;u[c*4+3]=xt(a0)^a0^a1^a2^xt(a3);
+    }
+    for(let i=0;i<16;i++)s[i]=u[i]^w[r*16+i];
+  }
+  return s;
+}
+
+/* AES-CCM (M=16, nonce 12バイト, タグは暗号文の前) */
+function ctrBlk(nonce,i){const b=new Uint8Array(16);b[0]=2;b.set(nonce,1);b[13]=i>>16&255;b[14]=i>>8&255;b[15]=i&255;return b}
+function ctrXor(w,nonce,src,dst){
+  for(let i=0;i<src.length;i+=16){
+    const ks=aesEnc(w,ctrBlk(nonce,i/16+1));
+    for(let j=0;j<16&&i+j<src.length;j++)dst[i+j]=src[i+j]^ks[j];
+  }
+}
+function cbcMac(w,nonce,pl){
+  const b0=new Uint8Array(16),L=pl.length;
+  b0[0]=58;b0.set(nonce,1);b0[13]=L>>16&255;b0[14]=L>>8&255;b0[15]=L&255;
+  let x=aesEnc(w,b0);
+  for(let i=0;i<L;i+=16){
+    const b=new Uint8Array(16);b.set(pl.subarray(i,i+16));
+    for(let j=0;j<16;j++)b[j]^=x[j];
+    x=aesEnc(w,b);
+  }
+  return x;
+}
+function ccmDec(key,f){
+  const w=aesKey(key),nonce=f.slice(0,12),c=f.subarray(16);
+  const s0=aesEnc(w,ctrBlk(nonce,0)),mac=c.slice(0,16).map((v,i)=>v^s0[i]);
+  const pl=new Uint8Array(c.length-16);
+  ctrXor(w,nonce,c.subarray(16),pl);
+  const m=cbcMac(w,nonce,pl);
+  return m.some((v,i)=>v!==mac[i])?null:pl;
+}
+function ccmEnc(key,nonce,pl){
+  const w=aesKey(key),s0=aesEnc(w,ctrBlk(nonce,0)),mac=cbcMac(w,nonce,pl);
+  const out=new Uint8Array(32+pl.length);
+  out.set(nonce,0);
+  for(let i=0;i<16;i++)out[16+i]=mac[i]^s0[i];
+  ctrXor(w,nonce,pl,out.subarray(32));
+  return out;
+}
+
+/* head.yw からAESキーを作る (ywb / ywb_getto) */
+function deriveKey(hd,getto){
+  const sub=r1=>{let r2=u32(hd,0x10);if(r2)r2–;return u32(hd,r2*0x78+0x39C8+r1*4+0x18)};
+  let a=(u32(hd,0x0C)^sub(0x0C))>>>0;
+  if(getto&&(sub(0)&0x4000))a=(~a)>>>0;
+  const c=new YW(a,sub(0x0A)&0xFF);
+  return Uint8Array.from({length:16},()=>c.next(256));
+}
+
+/* UI */
+let S=null;
+const SEC9=[0xBCE4,0xBD88]; // NOTE.txt: セクション0x09 (自分のID・鬼玉) のデータ範囲
+
+$("load").onclick=async()=>{
+  S=null;$("edit").classList.add("hide");$("cands").innerHTML="";$("newbox").classList.add("hide");
+  const hf=$("head").files[0],sf=$("save").files[0];
+  if(!hf||!sf)return msg("head.yw と game*.yw の両方を選んでください。","ng");
+  try{
+    const hb=new Uint8Array(await hf.arrayBuffer()),fb=new Uint8Array(await sf.arrayBuffer());
+    const hd=ywProc(hb,false);
+    for(const g of [true,false]){
+      const key=deriveKey(hd,g),pl=ccmDec(key,fb);
+      if(!pl)continue;
+      S={key,nonce:fb.slice(0,12),body:ywProc(pl,false),name:sf.name,getto:g};
+      break;
+    }
+    if(!S)throw new Error("復号できません。head.yw と game*.yw の組み合わせ（同じスロット・同じ時点のもの）を確認してください。");
+    msg("復号に成功しました（"+(S.getto?"月兎組":"赤猫団・白犬隊")+"方式）。","ok");
+    $("edit").classList.remove("hide");
+  }catch(e){msg("エラー: "+e.message,"ng")}
+};
+
+$("find").onclick=()=>{
+  if(!S)return;
+  const v=Number($("cur").value);
+  if(!Number.isInteger(v)||v<0)return msg("現在の鬼玉の数を整数で入力してください。","ng");
+  const scan=(a,b)=>{const r=[];for(let o=a;o+4<=b;o+=4)if(u32(S.body,o)===v)r.push(o);return r};
+  let r=scan(SEC9[0],SEC9[1]),wide=false;
+  if(!r.length){r=scan(0,S.body.length-8);wide=true}
+  const box=$("cands");box.innerHTML="";
+  if(!r.length){$("newbox").classList.add("hide");return msg("その値は見つかりませんでした。ゲーム内の数値を確認してください。","ng")}
+  r.forEach((o,i)=>{
+    const d=document.createElement("label");d.className="cand";d.style.color="var(--ink)";
+    d.innerHTML='<input type="radio" name="off" value="'+o+'"'+(r.length===1?" checked":"")+'> 0x'+o.toString(16).toUpperCase().padStart(4,"0")+' = '+v;
+    box.appendChild(d);
+  });
+  $("newbox").classList.remove("hide");
+  msg(r.length+"件見つかりました。"+(wide?"（鬼玉のセクション外を含む全体検索）":"")+(r.length>1?"\n複数ある場合は、鬼玉を増減させたセーブで再検索して共通の位置を選ぶと確実です。":""),r.length===1&&!wide?"ok":"");
+};
+
+$("apply").onclick=()=>{
+  const sel=document.querySelector('input[name=off]:checked'),nv=Number($("nv").value);
+  if(!sel)return msg("書き換える位置を選んでください。","ng");
+  if(!Number.isInteger(nv)||nv<0||nv>0xFFFFFFFF)return msg("新しい値は 0〜4294967295 の整数にしてください。","ng");
+  try{
+    p32(S.body,Number(sel.value),nv);
+    const out=ccmEnc(S.key,S.nonce,ywProc(S.body,true));
+    // 書き出す前に、復号し直して内容が一致するか確認
+    // CRC32（末尾8バイトの先頭4バイト）は再暗号化時に新しく計算されるため、
+    // 元のS.bodyと比較してはいけない。本文とseedだけを比較する。
+    const back=ywProc(ccmDec(S.key,out)||(()=>{throw new Error("再検証に失敗しました")})(),false);
+    const bodyLen=S.body.length-8;
+    const sameBody=back.length===S.body.length &&
+      back.every((v,i)=>i>=bodyLen ? true : v===S.body[i]);
+    const sameSeed=back.length===S.body.length &&
+      back[bodyLen+4]===S.body[bodyLen+4] &&
+      back[bodyLen+5]===S.body[bodyLen+5] &&
+      back[bodyLen+6]===S.body[bodyLen+6] &&
+      back[bodyLen+7]===S.body[bodyLen+7];
+    if(!sameBody||!sameSeed)throw new Error("再検証で本文またはseedが不一致。保存を中止しました。");
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(new Blob([out],{type:"application/octet-stream"}));
+    a.download=S.name;document.body.appendChild(a);a.click();a.remove();
+    msg("保存しました（"+S.name+"）。元のファイルと同じ方法で書き戻してください。head.yw は書き戻し不要です。","ok");
+  }catch(e){msg("エラー: "+e.message,"ng")}
+};
+</script>
+</body>
+</html>
