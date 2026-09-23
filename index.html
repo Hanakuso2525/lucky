@@ -187,7 +187,7 @@ function ccmEnc(key,nonce,pl){
 
 /* head.yw からAESキーを作る (ywb / ywb_getto) */
 function deriveKey(hd,getto){
-  const sub=r1=>{let r2=u32(hd,0x10);if(r2)r2--;return u32(hd,r2*0x78+0x39C8+r1*4+0x18)};
+  const sub=r1=>{let r2=u32(hd,0x10);if(r2)r2–;return u32(hd,r2*0x78+0x39C8+r1*4+0x18)};
   let a=(u32(hd,0x0C)^sub(0x0C))>>>0;
   if(getto&&(sub(0)&0x4000))a=(~a)>>>0;
   const c=new YW(a,sub(0x0A)&0xFF);
@@ -199,7 +199,9 @@ let S=null;
 const SEC9=[0xBCE4,0xBD88]; // NOTE.txt: セクション0x09 (自分のID・鬼玉) のデータ範囲
 
 $("load").onclick=async()=>{
-  S=null;$("edit").classList.add("hide");$("cands").innerHTML="";$("newbox").classList.add("hide");
+  S=null;$("edit").classList.add("hide");$("gacha").classList.add("hide");
+  $("cands").innerHTML="";$("newbox").classList.add("hide");
+  $("gcands").innerHTML="";$("gnewbox").classList.add("hide");
   const hf=$("head").files[0],sf=$("save").files[0];
   if(!hf||!sf)return msg("head.yw と game*.yw の両方を選んでください。","ng");
   try{
@@ -214,6 +216,7 @@ $("load").onclick=async()=>{
     if(!S)throw new Error("復号できません。head.yw と game*.yw の組み合わせ（同じスロット・同じ時点のもの）を確認してください。");
     msg("復号に成功しました（"+(S.getto?"月兎組":"赤猫団・白犬隊")+"方式）。","ok");
     $("edit").classList.remove("hide");
+    $("gacha").classList.remove("hide");
   }catch(e){msg("エラー: "+e.message,"ng")}
 };
 
@@ -233,6 +236,71 @@ $("find").onclick=()=>{
   });
   $("newbox").classList.remove("hide");
   msg(r.length+"件見つかりました。"+(wide?"（鬼玉のセクション外を含む全体検索）":"")+(r.length>1?"\n複数ある場合は、鬼玉を増減させたセーブで再検索して共通の位置を選ぶと確実です。":""),r.length===1&&!wide?"ok":"");
+};
+
+/* ガチャ回数: セクション0x01 / 0x0204～0x068B */
+const SEC1=[0x0204,0x0204+0x0488];
+
+$("gfind").onclick=()=>{
+  if(!S)return;
+  const v=Number($("gcur").value);
+  if(!Number.isInteger(v)||v<0||v>0xFFFFFFFF)
+    return msg("現在のガチャ回数を整数で入力してください。","ng");
+
+  const r=[];
+  for(let o=SEC1[0];o+4<=SEC1[1]&&o+4<=S.body.length-8;o++)
+    if(u32(S.body,o)===v)r.push({o,size:4});
+  for(let o=SEC1[0];o+2<=SEC1[1]&&o+2<=S.body.length-8;o++){
+    const x=S.body[o]|(S.body[o+1]<<8);
+    if(x===v&&!r.some(q=>q.o===o))r.push({o,size:2});
+  }
+  if(v<=255)for(let o=SEC1[0];o<SEC1[1]&&o<S.body.length-8;o++)
+    if(S.body[o]===v&&!r.some(q=>q.o===o))r.push({o,size:1});
+
+  const box=$("gcands");box.innerHTML="";
+  if(!r.length){
+    $("gnewbox").classList.add("hide");
+    return msg("セクション0x01にそのガチャ回数は見つかりませんでした。","ng");
+  }
+  r.forEach(q=>{
+    const d=document.createElement("label");d.className="cand";d.style.color="var(--ink)";
+    const type=q.size===4?"u32":q.size===2?"u16":"u8";
+    d.innerHTML='<input type="radio" name="goff" value="'+q.o+':'+q.size+'"'+
+      (r.length===1?" checked":"")+'> 0x'+q.o.toString(16).toUpperCase().padStart(4,"0")+
+      ' ('+type+') = '+v;
+    box.appendChild(d);
+  });
+  $("gnewbox").classList.remove("hide");
+  msg(r.length+"件のガチャ回数候補が見つかりました。","ok");
+};
+
+$("gapply").onclick=()=>{
+  const sel=document.querySelector('input[name="goff"]:checked'),nv=Number($("gnv").value);
+  if(!sel)return msg("ガチャ回数を書き換える位置を選んでください。","ng");
+  if(!Number.isInteger(nv)||nv<0||nv>0xFFFFFFFF)
+    return msg("新しいガチャ回数は0〜4294967295の整数にしてください。","ng");
+  try{
+    const [offStr,sizeStr]=sel.value.split(":"),off=Number(offStr),size=Number(sizeStr);
+    if(size===4)p32(S.body,off,nv);
+    else if(size===2){
+      if(nv>0xFFFF)throw new Error("この候補は2バイトなので0〜65535までです。");
+      S.body[off]=nv&255;S.body[off+1]=(nv>>>8)&255;
+    }else{
+      if(nv>255)throw new Error("この候補は1バイトなので0〜255までです。");
+      S.body[off]=nv;
+    }
+    const out=ccmEnc(S.key,S.nonce,ywProc(S.body,true));
+    const back=ywProc(ccmDec(S.key,out)||(()=>{throw new Error("再検証に失敗しました")})(),false);
+    const bodyLen=S.body.length-8;
+    const sameBody=back.length===S.body.length&&back.every((v,i)=>i>=bodyLen||v===S.body[i]);
+    const sameSeed=back.length===S.body.length&&
+      back[bodyLen+4]===S.body[bodyLen+4]&&back[bodyLen+5]===S.body[bodyLen+5]&&
+      back[bodyLen+6]===S.body[bodyLen+6]&&back[bodyLen+7]===S.body[bodyLen+7];
+    if(!sameBody||!sameSeed)throw new Error("再検証で本文またはseedが不一致。保存を中止しました。");
+    const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([out],{type:"application/octet-stream"}));
+    a.download=S.name;document.body.appendChild(a);a.click();a.remove();
+    msg("ガチャ回数を変更して保存しました（"+S.name+"）。","ok");
+  }catch(e){msg("エラー: "+e.message,"ng")}
 };
 
 $("apply").onclick=()=>{
