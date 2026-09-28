@@ -5,77 +5,117 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>妖怪ウォッチバスターズ 鬼玉エディタ</title>
 <style>
-:root{--bg:#f3f2f7;--card:#fff;--ink:#1c1b25;--sub:#6a6878;--line:#d9d6e4;--ac:#5a3fd0;--acink:#fff;--ok:#0f7a4a;--ng:#b3261e;
+:root{--bg:#f4f2fb;--card:#fff;--ink:#1d1a2b;--sub:#6b6880;--line:#e0dcf0;--ac:#5b3fd6;--ac2:#8a5cf5;--acink:#fff;--soft:#eee9ff;--ok:#0f7a4a;--ng:#b3261e;
 box-sizing:border-box;padding-top:env(safe-area-inset-top,0)}
-@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#14131a;--card:#1e1d27;--ink:#ecebf3;--sub:#9a98ab;--line:#33313f;--ac:#8f7bff;--acink:#12101c;--ok:#5fd59b;--ng:#ff8a80}}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#12111a;--card:#1c1b28;--ink:#eeecf7;--sub:#9c9ab0;--line:#332f45;--ac:#9a86ff;--ac2:#b79cff;--acink:#12101c;--soft:#2a2645;--ok:#5fd59b;--ng:#ff8a80}}
 *{box-sizing:inherit}
-body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 system-ui,-apple-system,"Hiragino Sans","Yu Gothic UI",sans-serif;padding-bottom:env(safe-area-inset-bottom,0)}
-main{max-width:34rem;margin:0 auto;padding:1.2rem 1rem 3rem}
-h1{font-size:1.35rem;margin:.2rem 0 .3rem;letter-spacing:.02em}
-p.lead{color:var(--sub);margin:0 0 1.2rem;font-size:.9rem}
-section{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:1rem;margin-bottom:1rem}
-h2{font-size:1rem;margin:0 0 .7rem}
-label{display:block;font-size:.85rem;color:var(--sub);margin:.6rem 0 .2rem}
-input[type=file],input[type=number],input[type=text],select{width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:.5rem}
-button{font:inherit;font-weight:600;background:var(--ac);color:var(--acink);border:0;border-radius:6px;padding:.6rem 1rem;margin-top:.8rem;cursor:pointer}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 system-ui,-apple-system,"Hiragino Sans","Yu Gothic UI",sans-serif;padding-bottom:calc(env(safe-area-inset-bottom,0px) + 6rem)}
+.hero{background:linear-gradient(135deg,var(--ac),var(--ac2));color:var(--acink);padding:1.4rem 1rem 1.6rem}
+.hero>div{max-width:36rem;margin:0 auto}
+h1{font-size:1.3rem;margin:0 0 .3rem;letter-spacing:.02em}
+.hero p{margin:0;font-size:.82rem;opacity:.92}
+main{max-width:36rem;margin:-.9rem auto 0;padding:0 .9rem}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:1rem;margin-bottom:.9rem;box-shadow:0 2px 10px rgba(60,40,140,.07)}
+h2{font-size:1rem;margin:0 0 .5rem;display:flex;align-items:center;gap:.5rem}
+.step{display:inline-grid;place-items:center;width:1.5rem;height:1.5rem;border-radius:50%;background:var(--ac);color:var(--acink);font-size:.8rem}
+label{display:block;font-size:.82rem;color:var(--sub);margin:.7rem 0 .25rem}
+input,select{width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:.55rem .6rem}
+input[type=radio]{width:auto}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:.6rem}
+button{font:inherit;font-weight:600;background:var(--ac);color:var(--acink);border:0;border-radius:8px;padding:.6rem 1rem;margin-top:.8rem;cursor:pointer}
+button.sub{background:var(--soft);color:var(--ac)}
 button:disabled{opacity:.4;cursor:default}
-button:focus-visible,input:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
-#msg{font-size:.9rem;min-height:1.4em;margin:.6rem 0 0;white-space:pre-wrap}
-.ok{color:var(--ok)}.ng{color:var(--ng)}
-.cand{display:flex;gap:.6rem;align-items:center;padding:.35rem 0;border-top:1px solid var(--line);font-variant-numeric:tabular-nums}
+button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:.3rem;background:var(--soft);padding:.25rem;border-radius:12px;margin-bottom:.9rem}
+.tabs button{margin:0;background:transparent;color:var(--sub);padding:.5rem .2rem;font-size:.9rem}
+.tabs button[aria-selected=true]{background:var(--card);color:var(--ac);box-shadow:0 1px 4px rgba(60,40,140,.15)}
+.cand{display:flex;gap:.6rem;align-items:center;padding:.5rem .2rem;border-top:1px solid var(--line);font-variant-numeric:tabular-nums;color:var(--ink);margin:0;font-size:.9rem}
 .cand:first-child{border-top:0}
-.hide{display:none}
-small{color:var(--sub)}
+.stat{background:var(--soft);border-radius:10px;padding:.6rem .8rem;font-size:.9rem;font-variant-numeric:tabular-nums}
+#msg{font-size:.9rem;min-height:1.4em;margin:.2rem .3rem 1rem;white-space:pre-wrap}
+.ok{color:var(--ok)}.ng{color:var(--ng)}
+.hide{display:none!important}
+small{color:var(--sub);display:block;margin-top:.4rem}
+.bar{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);box-shadow:0 -4px 16px rgba(60,40,140,.15);padding:.6rem .9rem calc(env(safe-area-inset-bottom,0px) + .6rem)}
+.bar>div{max-width:36rem;margin:0 auto}
+.bar summary{cursor:pointer;font-weight:600;color:var(--ac)}
+.bar ul{list-style:none;margin:.4rem 0 0;padding:0;max-height:30vh;overflow:auto;font-size:.88rem}
+.bar li{display:flex;justify-content:space-between;align-items:center;gap:.5rem;padding:.25rem 0;border-top:1px solid var(--line)}
+.bar li button{margin:0;padding:.1rem .5rem;background:var(--soft);color:var(--ng)}
+.bar #save{width:100%;margin-top:.5rem}
 </style>
 </head>
 <body>
+<header class="hero"><div>
+<h1>妖怪ウォッチバスターズ セーブエディタ</h1>
+<p>赤猫団・白犬隊・月兎組対応。ファイルは端末内で処理され、送信されません。必ず元のセーブデータをバックアップしてから使ってください。</p>
+</div></header>
 <main>
-<h1>鬼玉エディタ</h1>
-<p class="lead">妖怪ウォッチバスターズ 赤猫団・白犬隊・月兎組。ファイルは端末内で処理され、送信されません。必ず元のセーブデータをバックアップしてから使ってください。</p>
-
-<section>
-<h2>1. ファイルを選ぶ</h2>
+<section class="card">
+<h2><span class="step">1</span>ファイルを選ぶ</h2>
 <label for="head">head.yw（韓国版・欧米版は head.yw_g）</label>
 <input type="file" id="head">
-<label for="save">game*.yw（韓国版・欧米版は game*.yw_g）</label>
-<input type="file" id="save">
+<label for="save0">game*.yw（韓国版・欧米版は game*.yw_g）</label>
+<input type="file" id="save0">
 <button id="load">復号する</button>
 </section>
 
-<section id="edit" class="hide">
-<h2>2. 鬼玉を書き換える</h2>
+<div id="editor" class="hide">
+<h2 style="margin:.2rem .2rem .6rem"><span class="step">2</span>変更をリストに追加</h2>
+<div class="tabs" role="tablist">
+<button role="tab" data-t="oni" aria-selected="true">鬼玉</button>
+<button role="tab" data-t="item" aria-selected="false">アイテム</button>
+<button role="tab" data-t="gacha" aria-selected="false">ガシャ回数</button>
+</div>
+
+<section class="card" data-p="oni">
 <label for="cur">現在の鬼玉の数（ゲーム内の表示どおり）</label>
 <input type="number" id="cur" min="0" max="4294967295" inputmode="numeric">
-<button id="find">検索</button>
-<div id="cands" style="margin-top:.8rem"></div>
+<button class="sub" id="find">検索</button>
+<div id="cands" style="margin-top:.6rem"></div>
 <div id="newbox" class="hide">
 <label for="nv">新しい鬼玉の数</label>
 <input type="number" id="nv" min="0" max="4294967295" inputmode="numeric">
-<small>上限はゲーム側で不明です。極端に大きい値はおすすめしません。</small><br>
-<button id="apply">暗号化して保存</button>
+<small>上限はゲーム側で不明です。極端に大きい値はおすすめしません。</small>
+<button id="oadd">リストに追加</button>
 </div>
 </section>
 
-<section id="itemEdit" class="hide">
-<h2>3. アイテムIDで所持数を変更</h2>
-<label for="ord">IDの表記</label>
-<select id="ord">
-<option value="simple">シンプル（例: 9A89BF7C）</option>
-<option value="adv">アドバンス／ファイル上のバイト順（例: 7C BF 89 9A）</option>
-</select>
-<label for="iid">アイテムID（8桁の16進数）</label>
-<input type="text" id="iid" placeholder="9A89BF7C" autocomplete="off" autocapitalize="characters" spellcheck="false">
-<button id="ifind">IDで検索</button>
-<div id="icands" style="margin-top:.8rem"></div>
+<section class="card hide" data-p="item">
+<div class="row">
+<div><label for="ord">IDの表記</label>
+<select id="ord"><option value="simple">シンプル</option><option value="adv">バイト順</option></select></div>
+<div><label for="iid">アイテムID（8桁16進）</label>
+<input type="text" id="iid" placeholder="9A89BF7C" autocomplete="off" autocapitalize="characters" spellcheck="false"></div>
+</div>
+<small>シンプル: 9A89BF7C ／ バイト順（アドバンス）: 7C BF 89 9A</small>
+<button class="sub" id="ifind">IDで検索</button>
+<div id="icands" style="margin-top:.6rem"></div>
 <div id="inewbox" class="hide">
 <label for="inv">新しい所持数（1〜99）</label>
 <input type="number" id="inv" min="1" max="99" inputmode="numeric">
-<small>ゲームの上限は99個です。99を超えるとセーブ時にそのアイテムが消えるという報告があるため、100以上は指定できません。</small><br>
-<button id="iapply">暗号化して保存</button>
+<small>99を超えるとセーブ時にアイテムが消える報告があるため、上限は99です。</small>
+<button id="iadd">リストに追加</button>
 </div>
 </section>
+
+<section class="card hide" data-p="gacha">
+<div class="stat" id="gstat">-</div>
+<div class="row">
+<div><label for="grem">残り回数（0〜255）</label><input type="number" id="grem" min="0" max="255" inputmode="numeric"></div>
+<div><label for="gmax">最大回数（0〜255）</label><input type="number" id="gmax" min="0" max="255" inputmode="numeric"></div>
+</div>
+<small>ゲーム内の表示と「現在」の値が一致しているか確認してから変更してください。</small>
+<button id="gadd">リストに追加</button>
+</section>
+</div>
 <p id="msg" role="status"></p>
 </main>
+
+<div class="bar hide" id="bar"><div>
+<details open><summary>変更リスト（<span id="cnt">0</span>件）</summary><ul id="plist"></ul></details>
+<button id="save">まとめて暗号化して保存</button>
+</div></div>
 
 <script>
 "use strict";
@@ -214,84 +254,31 @@ function deriveKey(hd,getto){
 }
 
 /* UI */
-let S=null;
-const SEC9=[0xBCE4,0xBD88]; // NOTE.txt: セクション0x09 (自分のID・鬼玉) のデータ範囲
+let S=null,P=[],H=[];
+const hx=o=>"0x"+o.toString(16).toUpperCase().padStart(4,"0");
+const rd=(o,l)=>l===1?S.body[o]:u32(S.body,o);
 
-$("load").onclick=async()=>{
-  S=null;$("edit").classList.add("hide");$("itemEdit").classList.add("hide");$("cands").innerHTML="";$("newbox").classList.add("hide");$("icands").innerHTML="";$("inewbox").classList.add("hide");
-  const hf=$("head").files[0],sf=$("save").files[0];
-  if(!hf||!sf)return msg("head.yw と game*.yw の両方を選んでください。","ng");
-  try{
-    const hb=new Uint8Array(await hf.arrayBuffer()),fb=new Uint8Array(await sf.arrayBuffer());
-    const hd=ywProc(hb,false);
-    for(const g of [true,false]){
-      const key=deriveKey(hd,g),pl=ccmDec(key,fb);
-      if(!pl)continue;
-      S={key,nonce:fb.slice(0,12),body:ywProc(pl,false),name:sf.name,getto:g};
-      break;
-    }
-    if(!S)throw new Error("復号できません。head.yw と game*.yw の組み合わせ（同じスロット・同じ時点のもの）を確認してください。");
-    msg("復号に成功しました（"+(S.getto?"月兎組":"赤猫団・白犬隊")+"方式）。","ok");
-    $("edit").classList.remove("hide");$("itemEdit").classList.remove("hide");
-  }catch(e){msg("エラー: "+e.message,"ng")}
-};
-
-$("find").onclick=()=>{
-  if(!S)return;
-  const v=Number($("cur").value);
-  if(!Number.isInteger(v)||v<0)return msg("現在の鬼玉の数を整数で入力してください。","ng");
-  const scan=(a,b)=>{const r=[];for(let o=a;o+4<=b;o+=4)if(u32(S.body,o)===v)r.push(o);return r};
-  let r=scan(SEC9[0],SEC9[1]),wide=false;
-  if(!r.length){r=scan(0,S.body.length-8);wide=true}
-  const box=$("cands");box.innerHTML="";
-  if(!r.length){$("newbox").classList.add("hide");return msg("その値は見つかりませんでした。ゲーム内の数値を確認してください。","ng")}
-  r.forEach((o,i)=>{
-    const d=document.createElement("label");d.className="cand";d.style.color="var(--ink)";
-    d.innerHTML='<input type="radio" name="off" value="'+o+'"'+(r.length===1?" checked":"")+'> 0x'+o.toString(16).toUpperCase().padStart(4,"0")+' = '+v;
-    box.appendChild(d);
-  });
-  $("newbox").classList.remove("hide");
-  msg(r.length+"件見つかりました。"+(wide?"（鬼玉のセクション外を含む全体検索）":"")+(r.length>1?"\n複数ある場合は、鬼玉を増減させたセーブで再検索して共通の位置を選ぶと確実です。":""),r.length===1&&!wide?"ok":"");
-};
-
-/* 共通: 書き換え済みS.bodyを暗号化→再検証→ダウンロード */
-function commit(){
-  try{
-    const out=ccmEnc(S.key,S.nonce,ywProc(S.body,true));
-    // 書き出す前に、復号し直して内容が一致するか確認
-    // CRC32（末尾8バイトの先頭4バイト）は再暗号化時に新しく計算されるため、
-    // 元のS.bodyと比較してはいけない。本文とseedだけを比較する。
-    const back=ywProc(ccmDec(S.key,out)||(()=>{throw new Error("再検証に失敗しました")})(),false);
-    const bodyLen=S.body.length-8;
-    const sameBody=back.length===S.body.length &&
-      back.every((v,i)=>i>=bodyLen ? true : v===S.body[i]);
-    const sameSeed=back.length===S.body.length &&
-      back[bodyLen+4]===S.body[bodyLen+4] &&
-      back[bodyLen+5]===S.body[bodyLen+5] &&
-      back[bodyLen+6]===S.body[bodyLen+6] &&
-      back[bodyLen+7]===S.body[bodyLen+7];
-    if(!sameBody||!sameSeed)throw new Error("再検証で本文またはseedが不一致。保存を中止しました。");
-    const a=document.createElement("a");
-    a.href=URL.createObjectURL(new Blob([out],{type:"application/octet-stream"}));
-    a.download=S.name;document.body.appendChild(a);a.click();a.remove();
-    msg("保存しました（"+S.name+"）。元のファイルと同じ方法で書き戻してください。head.yw は書き戻し不要です。","ok");
-  }catch(e){msg("エラー: "+e.message,"ng")}
+/* 変更リスト: 同じ位置への変更は上書き。保存時にまとめて反映する */
+function queue(off,len,val,label){
+  P=P.filter(p=>p.off!==off);P.push({off,len,val,label});render();
+  msg("リストに追加しました（"+P.length+"件）。続けて他の変更を追加し、最後にまとめて保存できます。","ok");
 }
+function render(){
+  $("bar").classList.toggle("hide",!P.length);$("cnt").textContent=P.length;
+  const ul=$("plist");ul.innerHTML="";
+  P.forEach(p=>{
+    const li=document.createElement("li"),b=document.createElement("button");
+    li.append(p.label);b.textContent="✕";b.setAttribute("aria-label","取り消し");
+    b.onclick=()=>{P=P.filter(q=>q!==p);render()};li.append(b);ul.append(li);
+  });
+}
+document.querySelectorAll(".tabs button").forEach(t=>t.onclick=()=>{
+  document.querySelectorAll(".tabs button").forEach(x=>x.setAttribute("aria-selected",x===t));
+  document.querySelectorAll("[data-p]").forEach(p=>p.classList.toggle("hide",p.dataset.p!==t.dataset.t));
+});
 
-$("apply").onclick=()=>{
-  const sel=document.querySelector('input[name=off]:checked'),nv=Number($("nv").value);
-  if(!sel)return msg("書き換える位置を選んでください。","ng");
-  if(!Number.isInteger(nv)||nv<0||nv>0xFFFFFFFF)return msg("新しい値は 0〜4294967295 の整数にしてください。","ng");
-  p32(S.body,Number(sel.value),nv);
-  commit();
-};
-
-/* ---- アイテムID検索 ----
-   NOTE.txt / 改造コード解析より:
-   セクション = [ID:1B+3B][サイズ:u32][データ][末尾4B]。0xF1,0xF3,0x03,0x08 は子セクションを含む。
-   0x04 どうぐ・そざい / 0x05 バトル・そうび は 12バイト/個:
-     +0 u16 格納番号1, +2 u16 格納番号2, +4 u32 アイテムID(ハッシュ), +8 u32 所持数
-   書き換えるのは所持数(+8)のみ。格納番号は触らない。 */
+/* セクション構造の解析
+   セクション = [ID:1B+3B][サイズ:u32][データ][末尾4B]。0xF1,0xF3,0x03,0x08 は子を含む。 */
 const CONT=[0xF1,0xF3,0x03,0x08],ITEMSEC={4:"どうぐ・そざい",5:"バトル・そうび"};
 function sections(b){
   const map={};
@@ -309,6 +296,100 @@ function sections(b){
   for(const k in ITEMSEC)if(!map[k]||(map[k][1]-map[k][0])%12)return null;
   return map;
 }
+const SEC9=[0xBCE4,0xBD88]; // 鬼玉(セクション0x09)のデータ範囲
+/* ガシャ回数
+   解析資料では、復号後のセーブ本文に
+     0x2DE = 残りガチャ回数（1 byte）
+     0x2DF = 最大ガチャ回数（1 byte）
+   とされている。
+   改造コード「100002DE 0000FFFF」は、この2バイトを FF FF
+   （255 / 255）にする指定で、0x2DE と 0x2DF がそれぞれ独立した
+   1バイト値であることを示す。
+
+   以前の実装では、どうぐ表のアイテムID(u32)を「255以下」と判定して
+   いたため、通常の4バイトIDを持つ正しい表先頭 0x604 を検出できず、
+   別の位置をガシャ回数として読む可能性があった。
+*/
+function findAnchor(b){
+  const h=(o,i)=>b[o+i]|b[o+i+1]<<8,end=Math.min(b.length-8,0x8000);
+  for(let o=0x400;o+48<=end;o+=4){
+    let ok=true;
+    for(let k=0;k<4&&ok;k++){
+      const e=o+12*k;
+      /* 格納番号1/2は (0,1),(1,2),(2,3)...。
+         アイテムIDは4バイトなので、255以下という制限は付けない。 */
+      ok=h(e,0)===k&&h(e,2)===k+1&&u32(b,e+4)!==0&&u32(b,e+8)<=255;
+    }
+    if(ok)return o;
+  }
+  return -1;
+}
+const gachaOff=()=>{
+  /* 解析資料で確認されている固定位置を最優先する。 */
+  if(S.body.length>0x2DF){
+    const r=S.body[0x2DE],m=S.body[0x2DF];
+    if(r<=255&&m<=255)return 0x2DE;
+  }
+  /* 固定位置を検証できない場合のみ、どうぐ表からの相対位置を使う。 */
+  if(S.anc>=0)return S.anc-0x326;
+  const sec=S.secs&&S.secs[1];
+  return sec&&sec[0]+0x177<sec[1]?sec[0]+0x176:-1;
+};
+function showGacha(){
+  const g=gachaOff();
+  if(g<0){$("gstat").textContent="ガシャ回数の位置を特定できませんでした（どうぐ表が見つかりません）。先頭16バイト: "+Array.from(S.body.slice(0,16),v=>v.toString(16).padStart(2,"0")).join(" ");$("gadd").disabled=true;return}
+  $("gadd").disabled=false;
+  $("gstat").textContent="現在: 残り "+S.body[g]+" 回 / 最大 "+S.body[g+1]+" 回（位置 "+hx(g)+"）";
+  $("grem").value=S.body[g];$("gmax").value=S.body[g+1];
+}
+
+$("load").onclick=async()=>{
+  S=null;P=[];render();$("editor").classList.add("hide");
+  ["cands","icands"].forEach(i=>$(i).innerHTML="");["newbox","inewbox"].forEach(i=>$(i).classList.add("hide"));
+  const hf=$("head").files[0],sf=$("save0").files[0];
+  if(!hf||!sf)return msg("head.yw と game*.yw の両方を選んでください。","ng");
+  try{
+    const hb=new Uint8Array(await hf.arrayBuffer()),fb=new Uint8Array(await sf.arrayBuffer());
+    const hd=ywProc(hb,false);
+    for(const g of [true,false]){
+      const key=deriveKey(hd,g),pl=ccmDec(key,fb);
+      if(!pl)continue;
+      S={key,nonce:fb.slice(0,12),body:ywProc(pl,false),name:sf.name,getto:g};
+      S.secs=sections(S.body);S.anc=findAnchor(S.body);
+      break;
+    }
+    if(!S)throw new Error("復号できません。head.yw と game*.yw の組み合わせ（同じスロット・同じ時点のもの）を確認してください。");
+    msg("復号に成功しました（"+(S.getto?"月兎組":"赤猫団・白犬隊")+"方式）。","ok");
+    showGacha();$("editor").classList.remove("hide");
+  }catch(e){msg("エラー: "+e.message,"ng")}
+};
+
+/* 鬼玉 */
+$("find").onclick=()=>{
+  if(!S)return;
+  const v=Number($("cur").value);
+  if(!Number.isInteger(v)||v<0)return msg("現在の鬼玉の数を整数で入力してください。","ng");
+  const scan=(a,b)=>{const r=[];for(let o=a;o+4<=b;o+=4)if(u32(S.body,o)===v)r.push(o);return r};
+  let r=scan(SEC9[0],SEC9[1]),wide=false;
+  if(!r.length){r=scan(0,S.body.length-8);wide=true}
+  const box=$("cands");box.innerHTML="";
+  if(!r.length){$("newbox").classList.add("hide");return msg("その値は見つかりませんでした。ゲーム内の数値を確認してください。","ng")}
+  r.forEach(o=>{
+    const d=document.createElement("label");d.className="cand";
+    d.innerHTML='<input type="radio" name="off" value="'+o+'"'+(r.length===1?" checked":"")+'> '+hx(o)+' = '+v;
+    box.appendChild(d);
+  });
+  $("newbox").classList.remove("hide");
+  msg(r.length+"件見つかりました。"+(wide?"（鬼玉のセクション外を含む全体検索）":"")+(r.length>1?"\n複数ある場合は、鬼玉を増減させたセーブで再検索して共通の位置を選ぶと確実です。":""),r.length===1&&!wide?"ok":"");
+};
+$("oadd").onclick=()=>{
+  const sel=document.querySelector('input[name=off]:checked'),nv=Number($("nv").value);
+  if(!sel)return msg("書き換える位置を選んでください。","ng");
+  if(!Number.isInteger(nv)||nv<0||nv>0xFFFFFFFF)return msg("新しい値は 0〜4294967295 の整数にしてください。","ng");
+  const o=Number(sel.value);queue(o,4,nv,"鬼玉 "+hx(o)+": "+rd(o,4)+" → "+nv);
+};
+
+/* アイテム: 12バイト/個 = 格納番号1(2B) 格納番号2(2B) アイテムID(4B) 所持数(4B)。書き換えるのは所持数のみ */
 function parseItemId(){
   const s=$("iid").value.replace(/0x|[\s,]/gi,"");
   if(!/^[0-9a-f]{8}$/i.test(s))return null;
@@ -317,37 +398,69 @@ function parseItemId(){
 }
 $("ifind").onclick=()=>{
   if(!S)return;
-  const id=parseItemId(),box=$("icands");box.innerHTML="";$("inewbox").classList.add("hide");
+  const id=parseItemId(),box=$("icands");box.innerHTML="";$("inewbox").classList.add("hide");H=[];
   if(id===null)return msg("アイテムIDは8桁の16進数で入力してください。","ng");
-  const secs=sections(S.body),hits=[];
-  if(secs){
+  if(S.anc>=0){
+    // 表先頭から 12バイト刻み。どうぐ・そざい(+見出し分12バイト)・バトル・そうびまで連続して走査
+    const end=Math.min(S.anc+0x1770+12+0x11D0,S.body.length-8);
+    for(let o=S.anc,i=0;o+12<=end;o+=12,i++)
+      if(u32(S.body,o+4)===id&&u32(S.body,o+8)<=255)H.push({c:o+8,name:"枠 #"+(i+1)});
+  }else if(S.secs){
     for(const k in ITEMSEC){
-      const [a,b]=secs[k];
-      for(let o=a,i=0;o+12<=b;o+=12,i++)
-        if(u32(S.body,o+4)===id)hits.push({e:o,name:ITEMSEC[k],i});
+      const [a,b]=S.secs[k];
+      for(let o=a,i=0;o+12<=b;o+=12,i++)if(u32(S.body,o+4)===id)H.push({c:o+8,name:ITEMSEC[k]+" #"+(i+1)});
     }
   }else{
-    // セクション構造を解析できない場合の代替: 全体を走査し、所持数が1〜99のものだけ候補にする
     for(let o=4;o+8<=S.body.length-8;o+=4){
       const c=u32(S.body,o+4);
-      if(u32(S.body,o)===id&&c>=1&&c<=99)hits.push({e:o-4,name:"位置不明",i:-1});
+      if(u32(S.body,o)===id&&c>=1&&c<=99)H.push({c:o+4,name:"位置不明"});
     }
   }
-  if(!hits.length)return msg("そのIDのアイテムは、どうぐ・そざい／バトル・そうび内に見つかりませんでした。\n未所持のアイテム、または個数を持たない「だいじなもの」等の可能性があります（未所持アイテムの追加には対応していません）。","ng");
-  hits.forEach(h=>{
-    const d=document.createElement("label");d.className="cand";d.style.color="var(--ink)";
-    d.innerHTML='<input type="radio" name="ioff" value="'+(h.e+8)+'"'+(hits.length===1?" checked":"")+'> '+h.name+(h.i>=0?" #"+(h.i+1):"")+' / 0x'+(h.e+8).toString(16).toUpperCase().padStart(4,"0")+' / 現在 ×'+u32(S.body,h.e+8);
+  if(!H.length)return msg("そのIDのアイテムは、どうぐ・そざい／バトル・そうび内に見つかりませんでした。\n未所持のアイテム、または個数を持たない「だいじなもの」等の可能性があります（未所持アイテムの追加には対応していません）。","ng");
+  H.forEach((h,i)=>{
+    const d=document.createElement("label");d.className="cand";
+    d.innerHTML='<input type="radio" name="ioff" value="'+i+'"'+(H.length===1?" checked":"")+'> '+h.name+' / '+hx(h.c)+' / 現在 ×'+rd(h.c,4);
     box.appendChild(d);
   });
   $("inewbox").classList.remove("hide");
-  msg(hits.length+"件見つかりました。"+(secs?"":"\n※セクション構造を解析できなかったため、全体検索の結果です。内容をよく確認してください。"),secs&&hits.length===1?"ok":"");
+  msg(H.length+"件見つかりました。"+((S.anc>=0||S.secs)?"":"\n※どうぐ表を特定できなかったため全体検索の結果です。内容をよく確認してください。"),(S.anc>=0||S.secs)&&H.length===1?"ok":"");
 };
-$("iapply").onclick=()=>{
+$("iadd").onclick=()=>{
   const sel=document.querySelector('input[name=ioff]:checked'),nv=Number($("inv").value);
   if(!sel)return msg("書き換えるアイテムを選んでください。","ng");
   if(!Number.isInteger(nv)||nv<1||nv>99)return msg("所持数は 1〜99 の整数にしてください。","ng");
-  p32(S.body,Number(sel.value),nv);
-  commit();
+  const h=H[Number(sel.value)];queue(h.c,4,nv,h.name+" "+hx(h.c)+": ×"+rd(h.c,4)+" → ×"+nv);
+};
+
+/* ガシャ回数 */
+$("gadd").onclick=()=>{
+  const g=gachaOff(),r=Number($("grem").value),m=Number($("gmax").value);
+  if(g<0)return;
+  if(![r,m].every(v=>Number.isInteger(v)&&v>=0&&v<=255))return msg("回数は 0〜255 の整数にしてください。","ng");
+  if(r>m)return msg("残り回数は最大回数以下にしてください。","ng");
+  queue(g,1,r,"ガシャ残り "+hx(g)+": "+S.body[g]+" → "+r);
+  queue(g+1,1,m,"ガシャ最大 "+hx(g+1)+": "+S.body[g+1]+" → "+m);
+};
+
+/* まとめて保存: 変更を全部反映 → 暗号化 → 復号して再検証 → ダウンロード */
+$("save").onclick=()=>{
+  if(!S||!P.length)return;
+  const bak=S.body.slice();
+  try{
+    P.forEach(p=>p.len===1?(S.body[p.off]=p.val):p32(S.body,p.off,p.val));
+    const out=ccmEnc(S.key,S.nonce,ywProc(S.body,true));
+    // CRC32は再暗号化時に新しく計算されるため、本文とseedだけを比較する。
+    const back=ywProc(ccmDec(S.key,out)||(()=>{throw new Error("再検証に失敗しました")})(),false);
+    const bl=S.body.length-8;
+    const same=back.length===S.body.length&&back.every((v,i)=>i>=bl||v===S.body[i])&&[4,5,6,7].every(k=>back[bl+k]===S.body[bl+k]);
+    if(!same)throw new Error("再検証で本文またはseedが不一致。保存を中止しました。");
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(new Blob([out],{type:"application/octet-stream"}));
+    a.download=S.name;document.body.appendChild(a);a.click();a.remove();
+    const n=P.length;P=[];render();
+    ["cands","icands"].forEach(i=>$(i).innerHTML="");["newbox","inewbox"].forEach(i=>$(i).classList.add("hide"));showGacha();
+    msg(n+"件の変更を反映して保存しました（"+S.name+"）。元のファイルと同じ方法で書き戻してください。head.yw は書き戻し不要です。","ok");
+  }catch(e){S.body=bak;msg("エラー: "+e.message,"ng")}
 };
 </script>
 </body>
