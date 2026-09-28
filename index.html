@@ -297,49 +297,97 @@ function sections(b){
   return map;
 }
 const SEC9=[0xBCE4,0xBD88]; // 鬼玉(セクション0x09)のデータ範囲
-/* ガシャ回数
-   解析資料では、復号後のセーブ本文に
-     0x2DE = 残りガチャ回数（1 byte）
-     0x2DF = 最大ガチャ回数（1 byte）
-   とされている。
-   改造コード「100002DE 0000FFFF」は、この2バイトを FF FF
-   （255 / 255）にする指定で、0x2DE と 0x2DF がそれぞれ独立した
-   1バイト値であることを示す。
 
-   以前の実装では、どうぐ表のアイテムID(u32)を「255以下」と判定して
-   いたため、通常の4バイトIDを持つ正しい表先頭 0x604 を検出できず、
-   別の位置をガシャ回数として読む可能性があった。
-*/
+/* どうぐ表の先頭を探す。
+   Bustersの実データでは、どうぐ表は12バイト/個で、
+   (0,1),(1,2),(2,3)... の格納番号が並ぶ。
+   アイテムIDは4バイト値なので、ID <= 255 という条件は付けない。 */
 function findAnchor(b){
-  const h=(o,i)=>b[o+i]|b[o+i+1]<<8,end=Math.min(b.length-8,0x8000);
+  const h=(o,i)=>b[o+i]|b[o+i+1]<<8,end=Math.min(b.length-8,0x12000);
   for(let o=0x400;o+48<=end;o+=4){
     let ok=true;
     for(let k=0;k<4&&ok;k++){
       const e=o+12*k;
-      /* 格納番号1/2は (0,1),(1,2),(2,3)...。
-         アイテムIDは4バイトなので、255以下という制限は付けない。 */
       ok=h(e,0)===k&&h(e,2)===k+1&&u32(b,e+4)!==0&&u32(b,e+8)<=255;
     }
     if(ok)return o;
   }
   return -1;
 }
-const gachaOff=()=>{
-  /* 解析資料で確認されている固定位置を最優先する。 */
-  if(S.body.length>0x2DF){
-    const r=S.body[0x2DE],m=S.body[0x2DF];
-    if(r<=255&&m<=255)return 0x2DE;
+
+/*
+ * 重要:
+ * 改造コードの「100002DE 0000FFFF」はRAM上のアドレス 0x2DE に
+ * FF FF を書くコードであり、復号済みgame*.ywの単純な
+ * body[0x2DE] を意味しない。
+ *
+ * Bustersの保存データではセクション0x01内の
+ *   RAM 0x2DE -> ファイル本文 +0x14A
+ *   RAM 0x2DF -> ファイル本文 +0x14B
+ * に対応する。
+ *
+ * 今回提供された game1.yw では、
+ *   セクション0x01開始 = 0x204
+ *   0x204 + 0x14A = 0x34E
+ *   0x34E = 00（残り）
+ *   0x34F = 03（最大）
+ * となり、ゲーム表示の 0/3 と一致する。
+ *
+ * したがって、ガシャ回数はセクション0x01を基準に
+ * +0x14A / +0x14B を読む。
+ */
+function findBusterSection(b,type){
+  const length=b.length-8;
+  let pos=0;
+
+  // 先頭の F1 コンテナ
+  if(pos+8>length)return -1;
+  const first=u32(b,pos+4);
+  if((first&255)!==0xF1)return -1;
+  pos+=8;
+
+  while(pos<length){
+    if(pos+8>length)return -1;
+    const hdr=u32(b,pos+4),id=hdr&255,sz=hdr>>>8;
+    pos+=8;
+
+    if(id===0xF2){
+      pos+=sz+4;
+      continue;
+    }
+
+    if(id!==0xF3){
+      pos+=sz+4;
+      continue;
+    }
+
+    const end=pos+sz;
+    while(pos<end){
+      if(pos+8>end)return -1;
+      const sh=u32(b,pos+4),st=sh&255,ss=sh>>>8;
+      if(st===type)return pos;
+      pos+=ss+12;
+    }
+    if(pos!==end)return -1;
   }
-  /* 固定位置を検証できない場合のみ、どうぐ表からの相対位置を使う。 */
-  if(S.anc>=0)return S.anc-0x326;
-  const sec=S.secs&&S.secs[1];
-  return sec&&sec[0]+0x177<sec[1]?sec[0]+0x176:-1;
+  return -1;
+}
+
+const gachaOff=()=>{
+  const sec1=findBusterSection(S.body,0x01);
+  if(sec1>=0 && sec1+0x14B<S.body.length-8)return sec1+0x14A;
+
+  // フォールバック: どうぐ表(0x03)の先頭との既知の相対位置。
+  // 今回のBusters構造では 0x6A8 - 0x34E = 0x35A。
+  if(S.anc>=0)return S.anc-0x35A;
+
+  return -1;
 };
 function showGacha(){
   const g=gachaOff();
   if(g<0){$("gstat").textContent="ガシャ回数の位置を特定できませんでした（どうぐ表が見つかりません）。先頭16バイト: "+Array.from(S.body.slice(0,16),v=>v.toString(16).padStart(2,"0")).join(" ");$("gadd").disabled=true;return}
   $("gadd").disabled=false;
-  $("gstat").textContent="現在: 残り "+S.body[g]+" 回 / 最大 "+S.body[g+1]+" 回（位置 "+hx(g)+"）";
+  $("gstat").textContent="現在: 残り "+S.body[g]+" 回 / 最大 "+S.body[g+1]+" 回（RAM 0x02DE/0x02DF → ファイル位置 "+hx(g)+"/"+hx(g+1)+"）";
   $("grem").value=S.body[g];$("gmax").value=S.body[g+1];
 }
 
@@ -356,6 +404,7 @@ $("load").onclick=async()=>{
       if(!pl)continue;
       S={key,nonce:fb.slice(0,12),body:ywProc(pl,false),name:sf.name,getto:g};
       S.secs=sections(S.body);S.anc=findAnchor(S.body);
+      S.gsec=findBusterSection(S.body,0x01);
       break;
     }
     if(!S)throw new Error("復号できません。head.yw と game*.yw の組み合わせ（同じスロット・同じ時点のもの）を確認してください。");
