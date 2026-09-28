@@ -315,27 +315,6 @@ function findAnchor(b){
   return -1;
 }
 
-/*
- * 重要:
- * 改造コードの「100002DE 0000FFFF」はRAM上のアドレス 0x2DE に
- * FF FF を書くコードであり、復号済みgame*.ywの単純な
- * body[0x2DE] を意味しない。
- *
- * Bustersの保存データではセクション0x01内の
- *   RAM 0x2DE -> ファイル本文 +0x14A
- *   RAM 0x2DF -> ファイル本文 +0x14B
- * に対応する。
- *
- * 今回提供された game1.yw では、
- *   セクション0x01開始 = 0x204
- *   0x204 + 0x14A = 0x34E
- *   0x34E = 00（残り）
- *   0x34F = 03（最大）
- * となり、ゲーム表示の 0/3 と一致する。
- *
- * したがって、ガシャ回数はセクション0x01を基準に
- * +0x14A / +0x14B を読む。
- */
 function findBusterSection(b,type){
   const length=b.length-8;
   let pos=0;
